@@ -40,7 +40,7 @@
   #code {
     width: 100%; height: 40px;
     border: 1px solid #d8d8d8; border-radius: 4px;
-    padding: 0 10px; font-size: 15px; color: #333;
+    padding: 0 10px; font-size: 16px; color: #333; /* >=16px 避免 iOS 聚焦自动缩放 */
     background: #fff; outline: none;
   }
   #code:focus { border-color: #3d95d5; }
@@ -94,7 +94,7 @@
 
   <div class="qbox">
     <p class="hint">请输入质量报告编号或报告条码</p>
-    <input id="code" type="text" autocomplete="off" enterkeyhint="search" aria-label="质量报告编号或报告条码">
+    <input id="code" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="search" aria-label="质量报告编号或报告条码">
     <button id="btn" type="button">查 询</button>
     <p id="tip">请先输入质量报告编号或报告条码</p>
   </div>
@@ -159,8 +159,9 @@
   function doQuery(key) {
     var tip = document.getElementById('tip');
     if (String(key).trim() === '') {
-      // 空查询：提示先输入，不改变当前展示内容
+      // 空查询：提示先输入；同时收起“未查询到”提示，避免两条提示同屏矛盾
       tip.style.display = '';
+      document.getElementById('none').style.display = 'none';
       document.getElementById('code').focus();
       return;
     }
