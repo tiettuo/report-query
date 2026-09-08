@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="format-detection" content="telephone=no">
 <title>质检报告查询</title>
 <style>
@@ -23,6 +23,8 @@
   .topbar .back {
     display: flex; align-items: center; gap: 5px;
     font-size: 15px; width: 90px; cursor: pointer;
+    background: none; border: none; color: inherit; font: inherit;
+    padding: 0; height: 100%;
   }
   .topbar .back svg { width: 16px; height: 16px; fill: #fff; }
   .topbar .title {
@@ -51,7 +53,7 @@
   }
   #btn:active { background: #2b79b8; }
 
-  .result { margin-top: 26px; padding: 0 0 0; }
+  .result { margin-top: 26px; }
   .row { display: flex; align-items: stretch; margin-bottom: 5px; }
   .row .lab {
     width: 30%; min-width: 108px;
@@ -81,18 +83,18 @@
 </head>
 <body>
   <div class="topbar">
-    <span class="back" onclick="history.length>1 && history.back()">
-      <svg viewBox="0 0 24 24"><path d="M12.5 8H5.7L9.9 3.8a.9.9 0 0 0 0-1.3l-.9-.9a.9.9 0 0 0-1.3 0L2 8.1l5.7 5.7a.9.9 0 0 0 1.3 0l.9-.9a.9.9 0 0 0 0-1.3L5.7 7.3h6.8a4.7 4.7 0 0 1 0 9.4H11v2h1.5a6.7 6.7 0 0 0 0-13.4z"/></svg>
+    <button class="back" id="back" type="button" aria-label="返回">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12.5 8H5.7L9.9 3.8a.9.9 0 0 0 0-1.3l-.9-.9a.9.9 0 0 0-1.3 0L2 8.1l5.7 5.7a.9.9 0 0 0 1.3 0l.9-.9a.9.9 0 0 0 0-1.3L5.7 7.3h6.8a4.7 4.7 0 0 1 0 9.4H11v2h1.5a6.7 6.7 0 0 0 0-13.4z"/></svg>
       返回
-    </span>
+    </button>
     <span class="title">质检报告查询</span>
     <span class="sp"></span>
   </div>
 
   <div class="qbox">
     <p class="hint">请输入质量报告编号或报告条码</p>
-    <input id="code" type="text" autocomplete="off" enterkeyhint="search">
-    <button id="btn" onclick="doQuery()">查 询</button>
+    <input id="code" type="text" autocomplete="off" enterkeyhint="search" aria-label="质量报告编号或报告条码" placeholder=" ">
+    <button id="btn" type="button">查 询</button>
   </div>
 
   <div id="result" class="result"></div>
@@ -106,57 +108,62 @@
   </div>
 
 <script>
-  var REPORTS = [
-    {
-      keys: ['2025-sl-3006', '22508641'],
-      rows: [
-        ['报告编号', '2025-SL-3006'],
-        ['报告条码', '22508641'],
-        ['系统单号', '22508641'],
-        ['序号', '001'],
-        ['委托/抽样单号', '/'],
-        ['出证进度', '检毕'],
-        ['企业名称', '成都市黄键塑料有限公司'],
-        ['样品名称', '聚乙烯薄膜'],
-        ['管理编号', '/']
-      ]
-    }
-  ];
+  // 演示用静态查询页：报告数据以 base64 编码内嵌，页面按 URL 参数 ?r= 或手动输入展示对应报告。
+  var DATA_B64 = "W3sia2V5cyI6WyIyMDI1LXNsLTMwMDYiLCIyMjUwODY0MSJdLCJyb3dzIjpbWyLmiqXlkYrnvJblj7ciLCIyMDI1LVNMLTMwMDYiXSxbIuaKpeWRiuadoeeggSIsIjIyNTA4NjQxIl0sWyLns7vnu5/ljZXlj7ciLCIyMjUwODY0MSJdLFsi5bqP5Y+3IiwiMDAxIl0sWyLlp5TmiZgv5oq95qC35Y2V5Y+3IiwiLyJdLFsi5Ye66K+B6L+b5bqmIiwi5qOA5q+VIl0sWyLkvIHkuJrlkI3np7AiLCLmiJDpg73luILpu4TplK7loZHmlpnmnInpmZDlhazlj7giXSxbIuagt+WTgeWQjeensCIsIuiBmuS5meeDr+iWhOiGnCJdLFsi566h55CG57yW5Y+3IiwiLyJdXX1d";
 
-  function renderReport(i) {
-    var html = '';
-    REPORTS[i].rows.forEach(function (r) {
-      html += '<div class="row"><div class="lab">' + r[0] + '</div><div class="val">' + r[1] + '</div></div>';
-    });
-    document.getElementById('result').innerHTML = html;
+  var REPORTS = [];
+  try {
+    REPORTS = JSON.parse(decodeURIComponent(escape(atob(DATA_B64))));
+  } catch (e) { REPORTS = []; }
+
+  function findReport(key) {
+    key = String(key).trim().toLowerCase();
+    if (!key) return -1;
+    for (var i = 0; i < REPORTS.length; i++) {
+      if (REPORTS[i].keys.indexOf(key) !== -1) return i;
+    }
+    return -1;
   }
 
-  function doQuery() {
-    var v = document.getElementById('code').value.trim().toLowerCase();
-    if (v === '') {
-      renderReport(0);
-      document.getElementById('result').style.display = '';
-      document.getElementById('none').style.display = 'none';
-      return;
-    }
-    for (var i = 0; i < REPORTS.length; i++) {
-      if (REPORTS[i].keys.indexOf(v) !== -1) {
-        renderReport(i);
-        document.getElementById('result').style.display = '';
-        document.getElementById('none').style.display = 'none';
-        return;
-      }
-    }
+  // 用 DOM API 构建行，避免拼接 innerHTML
+  function renderReport(i) {
+    var box = document.getElementById('result');
+    box.innerHTML = '';
+    REPORTS[i].rows.forEach(function (r) {
+      var row = document.createElement('div'); row.className = 'row';
+      var lab = document.createElement('div'); lab.className = 'lab'; lab.textContent = r[0];
+      var val = document.createElement('div'); val.className = 'val'; val.textContent = r[1];
+      row.appendChild(lab); row.appendChild(val);
+      box.appendChild(row);
+    });
+    box.style.display = '';
+    document.getElementById('none').style.display = 'none';
+  }
+
+  function showNone() {
     document.getElementById('result').style.display = 'none';
     document.getElementById('none').style.display = '';
   }
 
+  function doQuery(key) {
+    var i = findReport(key);
+    if (i !== -1) renderReport(i); else showNone();
+  }
+
+  document.getElementById('btn').addEventListener('click', function () {
+    doQuery(document.getElementById('code').value);
+  });
   document.getElementById('code').addEventListener('keydown', function (e) {
-    if (e.key === 'Enter') doQuery();
+    if (e.key === 'Enter') doQuery(this.value);
+  });
+  document.getElementById('back').addEventListener('click', function () {
+    if (history.length > 1) history.back();
   });
 
-  // 默认展示（与扫码页面一致）
-  renderReport(0);
+  // URL 携带报告标识（二维码指向 /?r=<编号或条码>）时直接展示；
+  // 无参数时保持初始空态，不主动提示
+  var rIdx = findReport(new URLSearchParams(location.search).get('r'));
+  if (rIdx !== -1) renderReport(rIdx);
 </script>
 </body>
 </html>
