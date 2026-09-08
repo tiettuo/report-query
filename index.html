@@ -22,8 +22,9 @@
   }
   .topbar .back {
     display: flex; align-items: center; gap: 5px;
-    font-size: 15px; width: 90px; cursor: pointer;
-    background: none; border: none; color: inherit; font: inherit;
+    width: 90px; cursor: pointer;
+    background: none; border: none; color: inherit;
+    font-family: inherit; font-size: 15px; font-weight: inherit;
     padding: 0; height: 100%;
   }
   .topbar .back svg { width: 16px; height: 16px; fill: #fff; }
@@ -101,8 +102,8 @@
     <p id="tip">请先输入质量报告编号或报告条码</p>
   </div>
 
-  <div id="result" class="result"></div>
-  <p id="none" class="none-msg" style="display:none">未查询到相关报告，请核实后重新输入</p>
+  <div id="result" class="result" aria-live="polite"></div>
+  <p id="none" class="none-msg" style="display:none" aria-live="polite">未查询到相关报告，请核实后重新输入</p>
 
   <!-- 以下页脚文案照录自原系统页面（含其原文写法），非笔误 -->
   <div class="footer">
@@ -116,11 +117,28 @@
   // 演示用静态查询页：报告数据以 base64 编码内嵌，页面按 URL 参数 ?r= 或手动输入展示对应报告。
   var DATA_B64 = "W3sia2V5cyI6WyIyMDI2LVNMLTMwMDYiLCIyMjUwODY0MSJdLCJyb3dzIjpbWyLmiqXlkYrnvJblj7ciLCIyMDI2LVNMLTMwMDYiXSxbIuaKpeWRiuadoeeggSIsIjIyNTA4NjQxIl0sWyLns7vnu5/ljZXlj7ciLCIyMjUwODY0MSJdLFsi5bqP5Y+3IiwiMDAxIl0sWyLlp5TmiZgv5oq95qC35Y2V5Y+3IiwiLyJdLFsi5Ye66K+B6L+b5bqmIiwi5qOA5q+VIl0sWyLkvIHkuJrlkI3np7AiLCLmiJDpg73luILpu4TplK7loZHmlpnmnInpmZDlhazlj7giXSxbIuagt+WTgeWQjeensCIsIuiBmuS5meeDr+iWhOiGnCJdLFsi566h55CG57yW5Y+3IiwiLyJdXX1d";
 
+  // 优先 TextDecoder；旧 WebView 不支持时退回 decodeURIComponent(escape()) 兜底，
+  // 保证扫码直达这一核心场景不因缺少现代 API 而静默失效
   function b64ToJson(b64) {
     var bin = atob(b64);
-    var bytes = new Uint8Array(bin.length);
-    for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-    return JSON.parse(new TextDecoder('utf-8').decode(bytes));
+    var json;
+    if (typeof TextDecoder !== 'undefined') {
+      var bytes = new Uint8Array(bin.length);
+      for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      json = new TextDecoder('utf-8').decode(bytes);
+    } else {
+      json = decodeURIComponent(escape(bin));
+    }
+    return JSON.parse(json);
+  }
+
+  // URL 参数读取：优先 URLSearchParams，缺失时手动解析 location.search 兜底
+  function getParam(name) {
+    if (typeof URLSearchParams !== 'undefined') {
+      try { return new URLSearchParams(location.search).get(name); } catch (e) { /* 落入下方兜底 */ }
+    }
+    var m = location.search.match(new RegExp('[?&]' + name + '=([^&#]*)'));
+    return m ? decodeURIComponent(m[1]) : null;
   }
 
   var REPORTS = [];
@@ -143,10 +161,12 @@
   function renderReport(i) {
     var box = document.getElementById('result');
     box.innerHTML = '';
-    REPORTS[i].rows.forEach(function (r) {
+    var rows = Array.isArray(REPORTS[i].rows) ? REPORTS[i].rows : [];
+    rows.forEach(function (r) {
+      if (!Array.isArray(r) || r.length < 2) return; // 跳过结构异常的行
       var row = document.createElement('div'); row.className = 'row';
-      var lab = document.createElement('div'); lab.className = 'lab'; lab.textContent = r[0];
-      var val = document.createElement('div'); val.className = 'val'; val.textContent = r[1];
+      var lab = document.createElement('div'); lab.className = 'lab'; lab.textContent = String(r[0]);
+      var val = document.createElement('div'); val.className = 'val'; val.textContent = String(r[1]);
       row.appendChild(lab); row.appendChild(val);
       box.appendChild(row);
     });
@@ -186,9 +206,11 @@
   });
 
   // URL 携带报告标识（二维码指向 /?r=<编号或条码>）时直接展示；
-  // 无参数时保持初始空态，不主动提示
-  var rIdx = findReport(new URLSearchParams(location.search).get('r'));
+  // 带参数但未命中时给出“未查询到”提示；无参数时保持初始空态，不主动提示
+  var rParam = getParam('r');
+  var rIdx = findReport(rParam);
   if (rIdx !== -1) renderReport(rIdx);
+  else if (rParam != null && String(rParam).trim() !== '') showNone();
 </script>
 </body>
 </html>
