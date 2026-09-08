@@ -73,6 +73,7 @@
   }
 
   .none-msg { text-align: center; color: #666; font-size: 15px; margin: 40px 0; }
+  #tip { text-align: center; color: #e04b3a; font-size: 13px; margin: 10px 0 0; display: none; }
 
   .footer {
     text-align: center; color: #333;
@@ -95,6 +96,7 @@
     <p class="hint">请输入质量报告编号或报告条码</p>
     <input id="code" type="text" autocomplete="off" enterkeyhint="search" aria-label="质量报告编号或报告条码">
     <button id="btn" type="button">查 询</button>
+    <p id="tip">请先输入质量报告编号或报告条码</p>
   </div>
 
   <div id="result" class="result"></div>
@@ -155,6 +157,14 @@
   }
 
   function doQuery(key) {
+    var tip = document.getElementById('tip');
+    if (String(key).trim() === '') {
+      // 空查询：提示先输入，不改变当前展示内容
+      tip.style.display = '';
+      document.getElementById('code').focus();
+      return;
+    }
+    tip.style.display = 'none';
     var i = findReport(key);
     if (i !== -1) renderReport(i); else showNone();
   }
@@ -166,6 +176,8 @@
     if (e.key === 'Enter') doQuery(this.value);
   });
   document.getElementById('back').addEventListener('click', function () {
+    // 直接扫码打开（无历史）时尝试关闭页面；部分浏览器禁止脚本关闭标签页，
+    // 此时点击无效果，属浏览器限制，无更优处理
     if (history.length > 1) history.back(); else window.close();
   });
 
