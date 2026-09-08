@@ -168,7 +168,8 @@
     if (typeof URLSearchParams !== 'undefined') {
       try { return new URLSearchParams(location.search).get(name); } catch (e) { /* 落入下方兜底 */ }
     }
-    var m = location.search.match(new RegExp('[?&]' + name + '=([^&#]*)'));
+    var safe = String(name).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // 转义正则元字符
+    var m = location.search.match(new RegExp('[?&]' + safe + '=([^&#]*)'));
     if (!m) return null;
     raw = m[1].replace(/\+/g, ' ');
     try { return decodeURIComponent(raw); } catch (e) { return raw; }
@@ -245,7 +246,7 @@
   var rParam = getParam('r');
   var rIdx = findReport(rParam);
   if (rIdx !== -1) renderReport(rIdx);
-  else if (rParam != null && String(rParam).trim() !== '') showNone();
+  else if (rParam != null) showNone(); // 带参数（含空/纯空白）但未命中时给出提示；无参数则保持空态
 </script>
 </body>
 </html>
