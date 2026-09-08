@@ -114,25 +114,32 @@
   </div>
 
 <script>
-  // 演示用静态查询页：报告数据以 base64 编码内嵌，页面按 URL 参数 ?r= 或手动输入展示对应报告。
+  // 说明：本页为「自包含演示/样板查询页」，扫码后无需任何后端即可直接弹出报告，
+  // 故报告数据以 base64 内嵌于前端（内容本身即为页面要展示的数据，并非敏感信息）。
+  // 按 URL 参数 ?r=<编号或条码> 或手动输入匹配展示对应报告。
   var DATA_B64 = "W3sia2V5cyI6WyIyMDI2LVNMLTMwMDYiLCIyMjUwODY0MSJdLCJyb3dzIjpbWyLmiqXlkYrnvJblj7ciLCIyMDI2LVNMLTMwMDYiXSxbIuaKpeWRiuadoeeggSIsIjIyNTA4NjQxIl0sWyLns7vnu5/ljZXlj7ciLCIyMjUwODY0MSJdLFsi5bqP5Y+3IiwiMDAxIl0sWyLlp5TmiZgv5oq95qC35Y2V5Y+3IiwiLyJdLFsi5Ye66K+B6L+b5bqmIiwi5qOA5q+VIl0sWyLkvIHkuJrlkI3np7AiLCLmiJDpg73luILpu4TplK7loZHmlpnmnInpmZDlhazlj7giXSxbIuagt+WTgeWQjeensCIsIuiBmuS5meeDr+iWhOiGnCJdLFsi566h55CG57yW5Y+3IiwiLyJdXX1d";
 
-  // 手工把 atob 得到的二进制串按 UTF-8 解码为字符串（不依赖已废弃的 escape()）
+  // 手工把 atob 得到的二进制串按 UTF-8 解码为字符串（不依赖已废弃的 escape()）。
+  // 校验前置字节与后续续字节，非法字节以 U+FFFD 替换，避免异常数据输出乱码。
   function binToUtf8(bin) {
-    var cps = [], i = 0, c;
-    while (i < bin.length) {
-      c = bin.charCodeAt(i);
-      if (c < 0x80) { cps.push(c); i += 1; }
-      else if (c < 0xE0) { cps.push(((c & 0x1F) << 6) | (bin.charCodeAt(i + 1) & 0x3F)); i += 2; }
-      else if (c < 0xF0) { cps.push(((c & 0x0F) << 12) | ((bin.charCodeAt(i + 1) & 0x3F) << 6) | (bin.charCodeAt(i + 2) & 0x3F)); i += 3; }
-      else { cps.push(((c & 0x07) << 18) | ((bin.charCodeAt(i + 1) & 0x3F) << 12) | ((bin.charCodeAt(i + 2) & 0x3F) << 6) | (bin.charCodeAt(i + 3) & 0x3F)); i += 4; }
+    var n = bin.length, i = 0, out = [];
+    function cont(k) { return k < n ? bin.charCodeAt(k) & 0xC0 : 0; }
+    while (i < n) {
+      var c = bin.charCodeAt(i), cp;
+      if (c < 0x80) { cp = c; i += 1; }
+      else if (c >= 0xC2 && c < 0xE0 && cont(i + 1) === 0x80) {
+        cp = ((c & 0x1F) << 6) | (bin.charCodeAt(i + 1) & 0x3F); i += 2;
+      } else if (c >= 0xE0 && c < 0xF0 && cont(i + 1) === 0x80 && cont(i + 2) === 0x80) {
+        cp = ((c & 0x0F) << 12) | ((bin.charCodeAt(i + 1) & 0x3F) << 6) | (bin.charCodeAt(i + 2) & 0x3F); i += 3;
+      } else if (c >= 0xF0 && c <= 0xF4 && cont(i + 1) === 0x80 && cont(i + 2) === 0x80 && cont(i + 3) === 0x80) {
+        cp = ((c & 0x07) << 18) | ((bin.charCodeAt(i + 1) & 0x3F) << 12) | ((bin.charCodeAt(i + 2) & 0x3F) << 6) | (bin.charCodeAt(i + 3) & 0x3F); i += 4;
+      } else { cp = 0xFFFD; i += 1; } // 非法前置/续字节
+      if (cp > 0x10FFFF || (cp >= 0xD800 && cp <= 0xDFFF)) cp = 0xFFFD; // 越界/代理区
+      if (cp > 0xFFFF) { cp -= 0x10000; out.push(0xD800 + (cp >> 10), 0xDC00 + (cp & 0x3FF)); }
+      else out.push(cp);
     }
-    var s = '';
-    for (var j = 0; j < cps.length; j++) {
-      var code = cps[j];
-      if (code > 0xFFFF) { code -= 0x10000; s += String.fromCharCode(0xD800 + (code >> 10), 0xDC00 + (code & 0x3FF)); }
-      else s += String.fromCharCode(code);
-    }
+    var s = '', k;
+    for (k = 0; k < out.length; k++) s += String.fromCharCode(out[k]);
     return s;
   }
 
