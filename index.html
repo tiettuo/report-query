@@ -117,32 +117,57 @@
   // 演示用静态查询页：报告数据以 base64 编码内嵌，页面按 URL 参数 ?r= 或手动输入展示对应报告。
   var DATA_B64 = "W3sia2V5cyI6WyIyMDI2LVNMLTMwMDYiLCIyMjUwODY0MSJdLCJyb3dzIjpbWyLmiqXlkYrnvJblj7ciLCIyMDI2LVNMLTMwMDYiXSxbIuaKpeWRiuadoeeggSIsIjIyNTA4NjQxIl0sWyLns7vnu5/ljZXlj7ciLCIyMjUwODY0MSJdLFsi5bqP5Y+3IiwiMDAxIl0sWyLlp5TmiZgv5oq95qC35Y2V5Y+3IiwiLyJdLFsi5Ye66K+B6L+b5bqmIiwi5qOA5q+VIl0sWyLkvIHkuJrlkI3np7AiLCLmiJDpg73luILpu4TplK7loZHmlpnmnInpmZDlhazlj7giXSxbIuagt+WTgeWQjeensCIsIuiBmuS5meeDr+iWhOiGnCJdLFsi566h55CG57yW5Y+3IiwiLyJdXX1d";
 
-  // 优先 TextDecoder；旧 WebView 不支持时退回 decodeURIComponent(escape()) 兜底，
-  // 保证扫码直达这一核心场景不因缺少现代 API 而静默失效
+  // 手工把 atob 得到的二进制串按 UTF-8 解码为字符串（不依赖已废弃的 escape()）
+  function binToUtf8(bin) {
+    var cps = [], i = 0, c;
+    while (i < bin.length) {
+      c = bin.charCodeAt(i);
+      if (c < 0x80) { cps.push(c); i += 1; }
+      else if (c < 0xE0) { cps.push(((c & 0x1F) << 6) | (bin.charCodeAt(i + 1) & 0x3F)); i += 2; }
+      else if (c < 0xF0) { cps.push(((c & 0x0F) << 12) | ((bin.charCodeAt(i + 1) & 0x3F) << 6) | (bin.charCodeAt(i + 2) & 0x3F)); i += 3; }
+      else { cps.push(((c & 0x07) << 18) | ((bin.charCodeAt(i + 1) & 0x3F) << 12) | ((bin.charCodeAt(i + 2) & 0x3F) << 6) | (bin.charCodeAt(i + 3) & 0x3F)); i += 4; }
+    }
+    var s = '';
+    for (var j = 0; j < cps.length; j++) {
+      var code = cps[j];
+      if (code > 0xFFFF) { code -= 0x10000; s += String.fromCharCode(0xD800 + (code >> 10), 0xDC00 + (code & 0x3FF)); }
+      else s += String.fromCharCode(code);
+    }
+    return s;
+  }
+
+  function bytesOf(bin) {
+    var b = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) b[i] = bin.charCodeAt(i);
+    return b;
+  }
+
+  // 优先 TextDecoder；旧 WebView 不支持时退回手工 UTF-8 解码兜底，
+  // 保证扫码直达这一核心场景不因缺少现代 API 而失效
   function b64ToJson(b64) {
     var bin = atob(b64);
-    var json;
-    if (typeof TextDecoder !== 'undefined') {
-      var bytes = new Uint8Array(bin.length);
-      for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-      json = new TextDecoder('utf-8').decode(bytes);
-    } else {
-      json = decodeURIComponent(escape(bin));
-    }
+    var json = (typeof TextDecoder !== 'undefined')
+      ? new TextDecoder('utf-8').decode(bytesOf(bin))
+      : binToUtf8(bin);
     return JSON.parse(json);
   }
 
-  // URL 参数读取：优先 URLSearchParams，缺失时手动解析 location.search 兜底
+  // URL 参数读取：优先 URLSearchParams，缺失/异常时手动解析 location.search 兜底；
+  // 两条路径均把 '+' 视为空格、并容忍畸形百分号，避免 URIError 中断初始化
   function getParam(name) {
+    var raw = null;
     if (typeof URLSearchParams !== 'undefined') {
       try { return new URLSearchParams(location.search).get(name); } catch (e) { /* 落入下方兜底 */ }
     }
     var m = location.search.match(new RegExp('[?&]' + name + '=([^&#]*)'));
-    return m ? decodeURIComponent(m[1]) : null;
+    if (!m) return null;
+    raw = m[1].replace(/\+/g, ' ');
+    try { return decodeURIComponent(raw); } catch (e) { return raw; }
   }
 
   var REPORTS = [];
-  try { REPORTS = b64ToJson(DATA_B64); } catch (e) { REPORTS = []; }
+  try { REPORTS = b64ToJson(DATA_B64); }
+  catch (e) { REPORTS = []; if (typeof console !== 'undefined') console.warn('报告数据解析失败', e); }
 
   // 编号匹配统一转小写比较；keys 以正式大小写存储，仅用于匹配
   function findReport(key) {
@@ -200,8 +225,9 @@
     doQuery(document.getElementById('code').value);
   });
   document.getElementById('back').addEventListener('click', function () {
-    // 直接扫码打开（无历史）时尝试关闭页面。本页为单页查询页，无独立入口页可跳转；
-    // 部分浏览器禁止脚本关闭非脚本打开的标签页，此时点击无效果，属浏览器限制。
+    // 返回：有历史则回退；直接扫码打开（无历史）时尝试关闭当前查询页。
+    // 本页为单页查询页，无独立入口页可跳转。部分浏览器禁止脚本关闭非脚本打开的
+    // 标签页，此时 window.close() 被忽略——这是浏览器安全限制，无更优通用降级。
     if (history.length > 1) history.back(); else window.close();
   });
 
