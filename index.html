@@ -93,13 +93,14 @@
 
   <div class="qbox">
     <p class="hint">请输入质量报告编号或报告条码</p>
-    <input id="code" type="text" autocomplete="off" enterkeyhint="search" aria-label="质量报告编号或报告条码" placeholder=" ">
+    <input id="code" type="text" autocomplete="off" enterkeyhint="search" aria-label="质量报告编号或报告条码">
     <button id="btn" type="button">查 询</button>
   </div>
 
   <div id="result" class="result"></div>
   <p id="none" class="none-msg" style="display:none">未查询到相关报告，请核实后重新输入</p>
 
+  <!-- 以下页脚文案照录自原系统页面（含其原文写法），非笔误 -->
   <div class="footer">
     版权(3.0)所有：国家高分子材料质量检验检测中心<br>
     （安徽）<br>
@@ -109,18 +110,26 @@
 
 <script>
   // 演示用静态查询页：报告数据以 base64 编码内嵌，页面按 URL 参数 ?r= 或手动输入展示对应报告。
-  var DATA_B64 = "W3sia2V5cyI6WyIyMDI1LXNsLTMwMDYiLCIyMjUwODY0MSJdLCJyb3dzIjpbWyLmiqXlkYrnvJblj7ciLCIyMDI1LVNMLTMwMDYiXSxbIuaKpeWRiuadoeeggSIsIjIyNTA4NjQxIl0sWyLns7vnu5/ljZXlj7ciLCIyMjUwODY0MSJdLFsi5bqP5Y+3IiwiMDAxIl0sWyLlp5TmiZgv5oq95qC35Y2V5Y+3IiwiLyJdLFsi5Ye66K+B6L+b5bqmIiwi5qOA5q+VIl0sWyLkvIHkuJrlkI3np7AiLCLmiJDpg73luILpu4TplK7loZHmlpnmnInpmZDlhazlj7giXSxbIuagt+WTgeWQjeensCIsIuiBmuS5meeDr+iWhOiGnCJdLFsi566h55CG57yW5Y+3IiwiLyJdXX1d";
+  var DATA_B64 = "W3sia2V5cyI6WyIyMDI1LVNMLTMwMDYiLCIyMjUwODY0MSJdLCJyb3dzIjpbWyLmiqXlkYrnvJblj7ciLCIyMDI1LVNMLTMwMDYiXSxbIuaKpeWRiuadoeeggSIsIjIyNTA4NjQxIl0sWyLns7vnu5/ljZXlj7ciLCIyMjUwODY0MSJdLFsi5bqP5Y+3IiwiMDAxIl0sWyLlp5TmiZgv5oq95qC35Y2V5Y+3IiwiLyJdLFsi5Ye66K+B6L+b5bqmIiwi5qOA5q+VIl0sWyLkvIHkuJrlkI3np7AiLCLmiJDpg73luILpu4TplK7loZHmlpnmnInpmZDlhazlj7giXSxbIuagt+WTgeWQjeensCIsIuiBmuS5meeDr+iWhOiGnCJdLFsi566h55CG57yW5Y+3IiwiLyJdXX1d";
+
+  function b64ToJson(b64) {
+    var bin = atob(b64);
+    var bytes = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return JSON.parse(new TextDecoder('utf-8').decode(bytes));
+  }
 
   var REPORTS = [];
-  try {
-    REPORTS = JSON.parse(decodeURIComponent(escape(atob(DATA_B64))));
-  } catch (e) { REPORTS = []; }
+  try { REPORTS = b64ToJson(DATA_B64); } catch (e) { REPORTS = []; }
 
+  // 编号匹配统一转小写比较；keys 以正式大小写存储，仅用于匹配
   function findReport(key) {
-    key = String(key).trim().toLowerCase();
-    if (!key) return -1;
+    var k = String(key == null ? '' : key).trim().toLowerCase();
+    if (!k) return -1;
     for (var i = 0; i < REPORTS.length; i++) {
-      if (REPORTS[i].keys.indexOf(key) !== -1) return i;
+      for (var j = 0; j < REPORTS[i].keys.length; j++) {
+        if (REPORTS[i].keys[j].toLowerCase() === k) return i;
+      }
     }
     return -1;
   }
@@ -157,7 +166,7 @@
     if (e.key === 'Enter') doQuery(this.value);
   });
   document.getElementById('back').addEventListener('click', function () {
-    if (history.length > 1) history.back();
+    if (history.length > 1) history.back(); else window.close();
   });
 
   // URL 携带报告标识（二维码指向 /?r=<编号或条码>）时直接展示；
