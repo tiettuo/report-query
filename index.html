@@ -131,9 +131,11 @@
         cp = ((c & 0x1F) << 6) | (bin.charCodeAt(i + 1) & 0x3F); i += 2;
       } else if (c >= 0xE0 && c < 0xF0 && cont(i + 1) === 0x80 && cont(i + 2) === 0x80) {
         cp = ((c & 0x0F) << 12) | ((bin.charCodeAt(i + 1) & 0x3F) << 6) | (bin.charCodeAt(i + 2) & 0x3F); i += 3;
+        if (cp < 0x800) cp = 0xFFFD; // 拒绝 3 字节过度编码
       } else if (c >= 0xF0 && c <= 0xF4 && cont(i + 1) === 0x80 && cont(i + 2) === 0x80 && cont(i + 3) === 0x80) {
         cp = ((c & 0x07) << 18) | ((bin.charCodeAt(i + 1) & 0x3F) << 12) | ((bin.charCodeAt(i + 2) & 0x3F) << 6) | (bin.charCodeAt(i + 3) & 0x3F); i += 4;
-      } else { cp = 0xFFFD; i += 1; } // 非法前置/续字节
+        if (cp < 0x10000) cp = 0xFFFD; // 拒绝 4 字节过度编码
+      } else { cp = 0xFFFD; i += 1; } // 非法前置/续字节（含 0xC0/0xC1 的 2 字节过度编码）
       if (cp > 0x10FFFF || (cp >= 0xD800 && cp <= 0xDFFF)) cp = 0xFFFD; // 越界/代理区
       if (cp > 0xFFFF) { cp -= 0x10000; out.push(0xD800 + (cp >> 10), 0xDC00 + (cp & 0x3FF)); }
       else out.push(cp);
@@ -183,7 +185,7 @@
     for (var i = 0; i < REPORTS.length; i++) {
       var keys = Array.isArray(REPORTS[i].keys) ? REPORTS[i].keys : [];
       for (var j = 0; j < keys.length; j++) {
-        if (keys[j].toLowerCase() === k) return i;
+        if (String(keys[j]).toLowerCase() === k) return i;
       }
     }
     return -1;
@@ -214,11 +216,11 @@
   function doQuery(key) {
     var tip = document.getElementById('tip');
     if (String(key).trim() === '') {
-      // 空查询：提示先输入，并收起已渲染的报告与“未查询到”提示，避免同屏矛盾
+      // 空查询：提示先输入，并收起已渲染的报告与“未查询到”提示，避免同屏矛盾。
+      // 不强制 focus()，避免移动端键盘反复弹出并遮挡提示，用户可自点输入框再输入
       tip.style.display = '';
       document.getElementById('result').style.display = 'none';
       document.getElementById('none').style.display = 'none';
-      document.getElementById('code').focus();
       return;
     }
     tip.style.display = 'none';
