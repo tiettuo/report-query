@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="format-detection" content="telephone=no">
+<title>质检报告查询</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", "Microsoft YaHei", sans-serif;
+    background: #fff;
+    color: #333;
+    font-size: 15px;
+  }
+  .topbar {
+    position: sticky; top: 0; z-index: 10;
+    display: flex; align-items: center;
+    height: 46px; padding: 0 14px;
+    background: #3d95d5; color: #fff;
+  }
+  .topbar .back {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 15px; width: 90px; cursor: pointer;
+  }
+  .topbar .back svg { width: 16px; height: 16px; fill: #fff; }
+  .topbar .title {
+    flex: 1; text-align: center;
+    font-size: 16px; font-weight: 500;
+    overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  }
+  .topbar .sp { width: 90px; }
+
+  .hint { text-align: center; color: #373739; font-size: 15px; margin: 22px 0 14px; }
+
+  .qbox { padding: 0 16px; }
+  #code {
+    width: 100%; height: 40px;
+    border: 1px solid #d8d8d8; border-radius: 4px;
+    padding: 0 10px; font-size: 15px; color: #333;
+    background: #fff; outline: none;
+  }
+  #code:focus { border-color: #3d95d5; }
+  #btn {
+    display: block; width: 100%; height: 44px;
+    margin-top: 30px;
+    background: #3388cb; color: #fff;
+    border: none; border-radius: 4px;
+    font-size: 16px; letter-spacing: 2px; cursor: pointer;
+  }
+  #btn:active { background: #2b79b8; }
+
+  .result { margin-top: 26px; padding: 0 0 0; }
+  .row { display: flex; align-items: stretch; margin-bottom: 5px; }
+  .row .lab {
+    width: 30%; min-width: 108px;
+    background: #9fd4f4;
+    display: flex; align-items: center; justify-content: flex-end;
+    padding: 9px 10px 9px 4px;
+    font-size: 15px; color: #333;
+    border-radius: 2px;
+  }
+  .row .val {
+    flex: 1; background: #fff;
+    display: flex; align-items: center;
+    padding: 9px 8px 9px 10px;
+    font-size: 15px; color: #222;
+    border-radius: 2px;
+    word-break: break-all;
+  }
+
+  .none-msg { text-align: center; color: #666; font-size: 15px; margin: 40px 0; }
+
+  .footer {
+    text-align: center; color: #333;
+    font-size: 14px; line-height: 1.85;
+    margin: 26px 12px 46px;
+  }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <span class="back" onclick="history.length>1 && history.back()">
+      <svg viewBox="0 0 24 24"><path d="M12.5 8H5.7L9.9 3.8a.9.9 0 0 0 0-1.3l-.9-.9a.9.9 0 0 0-1.3 0L2 8.1l5.7 5.7a.9.9 0 0 0 1.3 0l.9-.9a.9.9 0 0 0 0-1.3L5.7 7.3h6.8a4.7 4.7 0 0 1 0 9.4H11v2h1.5a6.7 6.7 0 0 0 0-13.4z"/></svg>
+      返回
+    </span>
+    <span class="title">质检报告查询</span>
+    <span class="sp"></span>
+  </div>
+
+  <div class="qbox">
+    <p class="hint">请输入质量报告编号或报告条码</p>
+    <input id="code" type="text" autocomplete="off" enterkeyhint="search">
+    <button id="btn" onclick="doQuery()">查 询</button>
+  </div>
+
+  <div id="result" class="result"></div>
+  <p id="none" class="none-msg" style="display:none">未查询到相关报告，请核实后重新输入</p>
+
+  <div class="footer">
+    版权(3.0)所有：国家高分子材料质量检验检测中心<br>
+    （安徽）<br>
+    安徽省功能高分子材料分析研究有限公司<br>
+    技术支持：友胜软件（计量软件专家）
+  </div>
+
+<script>
+  var REPORTS = [
+    {
+      keys: ['2025-sl-3006', '22508641'],
+      rows: [
+        ['报告编号', '2025-SL-3006'],
+        ['报告条码', '22508641'],
+        ['系统单号', '22508641'],
+        ['序号', '001'],
+        ['委托/抽样单号', '/'],
+        ['出证进度', '检毕'],
+        ['企业名称', '成都市黄键塑料有限公司'],
+        ['样品名称', '聚乙烯薄膜'],
+        ['管理编号', '/']
+      ]
+    }
+  ];
+
+  function renderReport(i) {
+    var html = '';
+    REPORTS[i].rows.forEach(function (r) {
+      html += '<div class="row"><div class="lab">' + r[0] + '</div><div class="val">' + r[1] + '</div></div>';
+    });
+    document.getElementById('result').innerHTML = html;
+  }
+
+  function doQuery() {
+    var v = document.getElementById('code').value.trim().toLowerCase();
+    if (v === '') {
+      renderReport(0);
+      document.getElementById('result').style.display = '';
+      document.getElementById('none').style.display = 'none';
+      return;
+    }
+    for (var i = 0; i < REPORTS.length; i++) {
+      if (REPORTS[i].keys.indexOf(v) !== -1) {
+        renderReport(i);
+        document.getElementById('result').style.display = '';
+        document.getElementById('none').style.display = 'none';
+        return;
+      }
+    }
+    document.getElementById('result').style.display = 'none';
+    document.getElementById('none').style.display = '';
+  }
+
+  document.getElementById('code').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') doQuery();
+  });
+
+  // 默认展示（与扫码页面一致）
+  renderReport(0);
+</script>
+</body>
+</html>
