@@ -155,7 +155,7 @@
           开始查询
         </button>
       </form>
-      <p id="tip">请先输入要查询的报告号</p>
+      <p id="tip" aria-live="polite">请先输入要查询的报告号</p>
     </div>
   </div>
 
@@ -316,15 +316,19 @@
     menu.setAttribute('aria-expanded', open ? 'true' : 'false');
   });
   menudd.addEventListener('click', function (e) {
-    if (e.target.tagName === 'A') { e.preventDefault(); menudd.classList.remove('open'); menu.setAttribute('aria-expanded', 'false'); }
+    var a = e.target.closest ? e.target.closest('a') : null;
+    if (a) { e.preventDefault(); menudd.classList.remove('open'); menu.setAttribute('aria-expanded', 'false'); }
   });
-  // 点击菜单外部或按 Esc 关闭
-  function closeMenu() { menudd.classList.remove('open'); menu.setAttribute('aria-expanded', 'false'); }
+  // 点击菜单外部或按 Esc 关闭；键盘（Esc）关闭时把焦点还给汉堡按钮
+  function closeMenu(refocus) {
+    menudd.classList.remove('open'); menu.setAttribute('aria-expanded', 'false');
+    if (refocus) menu.focus();
+  }
   document.addEventListener('click', function (e) {
-    if (menudd.classList.contains('open') && !menudd.contains(e.target) && !menu.contains(e.target)) closeMenu();
+    if (menudd.classList.contains('open') && !menudd.contains(e.target) && !menu.contains(e.target)) closeMenu(false);
   });
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape' && menudd.classList.contains('open')) closeMenu();
+    if (e.key === 'Escape' && menudd.classList.contains('open')) closeMenu(true);
   });
 
   // URL 携带报告标识（二维码指向 /hct/?r=<报告号>）时直接展示；
