@@ -179,14 +179,18 @@
   try { REPORTS = b64ToJson(DATA_B64); }
   catch (e) { REPORTS = []; if (typeof console !== 'undefined') console.warn('报告数据解析失败', e); }
 
-  // 编号匹配统一转小写比较；keys 以正式大小写存储，仅用于匹配
+  // 匹配归一化：转小写并去掉所有非字母数字字符（空格/连字符等），
+  // 保留前导零（如序号 001），使手输编号对大小写、分隔符更宽容
+  function normKey(s) {
+    return String(s == null ? '' : s).toLowerCase().replace(/[^a-z0-9]/g, '');
+  }
   function findReport(key) {
-    var k = String(key == null ? '' : key).trim().toLowerCase();
+    var k = normKey(key);
     if (!k) return -1;
     for (var i = 0; i < REPORTS.length; i++) {
       var keys = Array.isArray(REPORTS[i].keys) ? REPORTS[i].keys : [];
       for (var j = 0; j < keys.length; j++) {
-        if (String(keys[j]).toLowerCase() === k) return i;
+        if (normKey(keys[j]) === k) return i;
       }
     }
     return -1;
