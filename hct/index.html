@@ -45,7 +45,7 @@
   .crumb { padding: 20px 16px 10px; font-size: 15px; color: #343434; }
   .crumb a { color: #343434; text-decoration: none; }
   .crumb .sep { margin: 0 10px; color: #bbb; }
-  .crumb .cur { color: #1390d3; }
+  .crumb .cur { color: #0c6396; } /* 深色以保证 15px 正文在白底上的对比度 ≥ 4.5:1 */
   .crumb-line { border-bottom: 1px solid #dfe7ee; margin: 0 16px; }
 
   /* 大标题 */
@@ -82,7 +82,7 @@
     border-radius: 4px 0 0 4px; background: #fff;
     padding: 0 10px; font-size: 16px; color: #333; outline: none; /* >=16px 避免 iOS 聚焦自动缩放 */
   }
-  #code:focus { border-color: #1390d3; }
+  #code:focus { border-color: #1390d3; box-shadow: 0 0 0 3px rgba(19, 144, 211, 0.25); }
   #btn {
     height: 42px; padding: 0 16px;
     background: #1390d3; color: #fff; border: none;
@@ -152,7 +152,7 @@
   // 说明：本页为「自包含演示/样板查询页」（仿 HCT 恒仓检测报告真伪查询），扫码后无需后端即可直接展示报告；
   // 报告数据以 base64 内嵌于前端（内容本身即为页面要展示的数据，并非敏感信息）。
   // 按 URL 参数 ?r=<报告号> 或手动输入匹配展示对应报告。
-  var DATA_B64 = "W3sia2V5cyI6WyJIQzI1MTYwMTg5MlQiXSwicm93cyI6W1si5oql5ZGK57yW5Y+3IiwiSEMyNTE2MDE4OTJUIl0sWyLkuqflk4HlkI3np7AiLCLogZrkuZnng6/pq5jljovoloTohpwo5aGR5paZ6Ziy5rC06Zuo5biDKSJdLFsi5p2Q6LSo6KeE5qC8IiwiNm0qMC4wNG1tLDYwa2cv5o2GKOWHgOmHjSkiXSxbIuWnlOaJmOaWuSIsIuWbm+W3nee+juWFtOWMheijheWItuWTgeaciemZkOWFrOWPuCJdLFsi5aeU5omY5pa55Zyw5Z2AIiwi5Zub5bed55yB5Y2X5YWF5biC6KW/5YWF5Y6/5LmJ5YW06ZWH5bed5Lic5YyX5pyJ5py65Yac5Lqn5ZOB57K+5rex5Yqg5bel5Lqn5Lia5ZutIl0sWyLmiqXlkYrml6XmnJ8iLCIyMDI1LjA5LjI2Il1dfV0=";
+  var DATA_B64 = "W3sia2V5cyI6WyJIQzI1MTYwMTg5MlQiXSwicm93cyI6W1si5oql5ZGK57yW5Y+3IiwiSEMyNTE2MDE4OTJUIl0sWyLkuqflk4HlkI3np7AiLCLogZrkuZnng6/pq5jljovoloTohpwo5aGR5paZ6Ziy5rC06Zuo5biDKSJdLFsi5p2Q6LSo6KeE5qC8IiwiNS41bSowLjA0bW0sNjBrZy/mjYYo5YeA6YeNKSJdLFsi5aeU5omY5pa5Iiwi5Zub5bed576O5YW05YyF6KOF5Yi25ZOB5pyJ6ZmQ5YWs5Y+4Il0sWyLlp5TmiZjmlrnlnLDlnYAiLCLlm5vlt53nnIHljZflhYXluILopb/lhYXljr/kuYnlhbTplYflt53kuJzljJfmnInmnLrlhpzkuqflk4Hnsr7mt7HliqDlt6XkuqfkuJrlm60iXSxbIuaKpeWRiuaXpeacnyIsIjIwMjYuMDkuMDUiXV19XQ==";
 
   // 手工把 atob 得到的二进制串按 UTF-8 解码为字符串（不依赖已废弃的 escape()）。
   // 校验前置字节与后续续字节，非法字节以 U+FFFD 替换，避免异常数据输出乱码。
@@ -202,11 +202,15 @@
     if (typeof URLSearchParams !== 'undefined') {
       try { return new URLSearchParams(location.search).get(name); } catch (e) { /* 落入下方兜底 */ }
     }
-    var safe = String(name).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // 转义正则元字符
-    var m = location.search.match(new RegExp('[?&]' + safe + '=([^&#]*)'));
-    if (!m) return null;
-    var raw = m[1].replace(/\+/g, ' ');
-    try { return decodeURIComponent(raw); } catch (e) { return raw; }
+    // 逐段解析（严格整段比较参数名，避免 “&r=” 出现在其它参数值中造成误取）
+    var parts = location.search.replace(/^\?/, '').split('&');
+    for (var i = 0; i < parts.length; i++) {
+      var eq = parts[i].indexOf('=');
+      if (eq === -1 || parts[i].slice(0, eq) !== String(name)) continue;
+      var raw = parts[i].slice(eq + 1).replace(/\+/g, ' ');
+      try { return decodeURIComponent(raw); } catch (e) { return raw; }
+    }
+    return null;
   }
 
   var REPORTS = [];
@@ -272,6 +276,12 @@
   document.getElementById('qform').addEventListener('submit', function (e) {
     e.preventDefault();
     doQuery(document.getElementById('code').value);
+  });
+
+  // 占位链接（href="#"）统一拦截：不跳页顶、不产生导航，行为一致
+  document.addEventListener('click', function (e) {
+    var a = e.target && e.target.closest ? e.target.closest('a[href="#"]') : null;
+    if (a) e.preventDefault();
   });
 
   // 查询面板折叠/展开（默认展开，与扫码展示形态一致）
