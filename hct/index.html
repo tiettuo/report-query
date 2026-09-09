@@ -39,7 +39,7 @@
 
   /* 横幅 */
   .banner { margin: 0 16px; }
-  .banner img { display: block; width: 100%; border: 0; }
+  .banner img { display: block; width: 100%; border: 0; aspect-ratio: 994 / 200; } /* 预留高度，避免加载时布局跳动 */
 
   /* 面包屑 */
   .crumb { padding: 20px 16px 10px; font-size: 15px; color: #343434; }
@@ -106,7 +106,7 @@
 <body>
   <div class="sitebar">
     <a class="logo" href="#" aria-label="HCT 恒仓检测">HCT</a>
-    <button class="menu-btn" id="menu" type="button" aria-label="菜单" aria-expanded="false">
+    <button class="menu-btn" id="menu" type="button" aria-label="菜单" aria-expanded="false" aria-controls="menudd">
       <span></span><span></span><span></span>
     </button>
     <!-- 演示样板页：以下导航为占位链接（href="#"），上线时需替换为真实栏目地址 -->
@@ -118,7 +118,7 @@
     </div>
   </div>
 
-  <div class="banner"><img src="hct-banner.jpg" alt="HCT 恒仓检测"></div>
+  <div class="banner"><img src="hct-banner.jpg" alt="HCT 恒仓检测" width="994" height="200"></div>
 
   <div class="crumb">
     <a href="#">网站首页</a><span class="sep">/</span><span class="cur">报告查询</span>
@@ -131,7 +131,9 @@
   <div id="result" class="rows wrap" aria-live="polite"></div>
   <p id="none" class="none-msg wrap" style="display:none" aria-live="polite">未查询到相关报告，请核实后重新输入</p>
 
-  <!-- 无 JS 兑底：直接展示报告静态内容，保证任何情况下扫码都能看到报告 -->
+  <!-- 无 JS 兑底：直接展示报告静态内容，保证任何情况下扫码都能看到报告。
+       ⚠ 此静态块与下方 DATA_B64 是同一份报告的两处副本：修改报告字段时两处必须同步改，
+       否则无 JS 环境与有 JS 环境会显示不一致。 -->
   <noscript>
     <div class="rows wrap">
       <div class="row"><div class="lab">报告编号：</div><div class="val">HC251601892T</div></div>
@@ -149,7 +151,7 @@
       <form id="qform" class="qgroup">
         <input id="code" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="search" aria-label="要查询的报告号" placeholder="请输入要查询的报告号">
         <button id="btn" type="submit">
-          <svg viewBox="0 0 24 24"><path d="M10 2a8 8 0 1 0 4.9 14.3l5.4 5.4 1.4-1.4-5.4-5.4A8 8 0 0 0 10 2zm0 2a6 6 0 1 1 0 12 6 6 0 0 1 0-12z"/></svg>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 2a8 8 0 1 0 4.9 14.3l5.4 5.4 1.4-1.4-5.4-5.4A8 8 0 0 0 10 2zm0 2a6 6 0 1 1 0 12 6 6 0 0 1 0-12z"/></svg>
           开始查询
         </button>
       </form>
