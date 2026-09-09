@@ -53,6 +53,7 @@
 
   /* 报告详情行（隔行浅蓝底） */
   .rows { margin-top: 28px; }
+  .rows:empty { margin-top: 0; } /* 空容器不留空隙 */
   .row { display: flex; align-items: center; padding: 10px 0; }
   .row:nth-child(odd) { background: #e7f4fc; }
   .row .lab {
@@ -126,7 +127,8 @@
 
   <h1 class="h1">查询报告真伪</h1>
 
-  <div id="result" class="rows wrap" style="display:none" aria-live="polite"></div>
+  <!-- #result 常驻 DOM（aria-live 区域需在内容写入前已存在才能播报）；空时用 :empty 消除上边距 -->
+  <div id="result" class="rows wrap" aria-live="polite"></div>
   <p id="none" class="none-msg wrap" style="display:none" aria-live="polite">未查询到相关报告，请核实后重新输入</p>
 
   <!-- 无 JS 兑底：直接展示报告静态内容，保证任何情况下扫码都能看到报告 -->
@@ -261,12 +263,11 @@
       row.appendChild(lab); row.appendChild(val);
       box.appendChild(row);
     });
-    box.style.display = '';
     document.getElementById('none').style.display = 'none';
   }
 
   function showNone() {
-    document.getElementById('result').style.display = 'none';
+    document.getElementById('result').innerHTML = '';
     document.getElementById('none').style.display = '';
   }
 
@@ -275,7 +276,7 @@
     if (String(key).trim() === '') {
       // 空查询：提示先输入，并收起已渲染的报告与“未查询到”提示，避免同屏矛盾
       tip.style.display = '';
-      document.getElementById('result').style.display = 'none';
+      document.getElementById('result').innerHTML = '';
       document.getElementById('none').style.display = 'none';
       return;
     }
@@ -314,6 +315,14 @@
   });
   menudd.addEventListener('click', function (e) {
     if (e.target.tagName === 'A') { e.preventDefault(); menudd.classList.remove('open'); menu.setAttribute('aria-expanded', 'false'); }
+  });
+  // 点击菜单外部或按 Esc 关闭
+  function closeMenu() { menudd.classList.remove('open'); menu.setAttribute('aria-expanded', 'false'); }
+  document.addEventListener('click', function (e) {
+    if (menudd.classList.contains('open') && !menudd.contains(e.target) && !menu.contains(e.target)) closeMenu();
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && menudd.classList.contains('open')) closeMenu();
   });
 
   // URL 携带报告标识（二维码指向 /hct/?r=<报告号>）时直接展示；
