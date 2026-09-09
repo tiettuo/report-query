@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="format-detection" content="telephone=no">
+<title>报告查询 &lt; HCT 恒仓检测</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { min-height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", "Microsoft YaHei", sans-serif;
+    background: #fff; color: #333; font-size: 15px;
+  }
+  .wrap { padding: 0 16px; }
+
+  /* 顶部 logo 栏 */
+  .sitebar { position: relative; z-index: 20; display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; }
+  .logo {
+    font-family: Georgia, "Times New Roman", serif;
+    font-style: italic; font-weight: 700;
+    font-size: 34px; letter-spacing: 1px; color: #1b71a2; line-height: 1;
+    text-decoration: none;
+  }
+  .menu-btn {
+    background: none; border: none; cursor: pointer; padding: 6px;
+    display: flex; flex-direction: column; gap: 5px;
+  }
+  .menu-btn span { display: block; width: 26px; height: 3px; background: #1d8ec6; border-radius: 1px; }
+  .menu-dd { display: none; position: absolute; top: 100%; left: 0; right: 0; border-bottom: 1px solid #eee; background: #fff; box-shadow: 0 4px 8px rgba(0,0,0,.08); }
+  .menu-dd.open { display: block; }
+  .menu-dd a {
+    display: block; padding: 10px 18px; color: #343434; font-size: 14px;
+    text-decoration: none; border-top: 1px solid #f2f2f2;
+  }
+  .menu-dd a:active { background: #f5f9fc; }
+
+  /* 横幅 */
+  .banner { margin: 0 16px; }
+  .banner img { display: block; width: 100%; border: 0; }
+
+  /* 面包屑 */
+  .crumb { padding: 20px 16px 10px; font-size: 15px; color: #343434; }
+  .crumb a { color: #343434; text-decoration: none; }
+  .crumb .sep { margin: 0 10px; color: #bbb; }
+  .crumb .cur { color: #1390d3; }
+  .crumb-line { border-bottom: 1px solid #dfe7ee; margin: 0 16px; }
+
+  /* 大标题 */
+  .h1 { color: #1390d3; font-size: 28px; font-weight: 700; margin: 26px 16px 0; }
+
+  /* 报告详情行（隔行浅蓝底） */
+  .rows { margin-top: 28px; }
+  .row { display: flex; align-items: center; padding: 10px 0; }
+  .row:nth-child(odd) { background: #e7f4fc; }
+  .row .lab {
+    width: 32%; min-width: 110px; flex-shrink: 0;
+    text-align: right; padding-right: 6px;
+    font-weight: 700; color: #333; font-size: 15px;
+  }
+  .row .val { flex: 1; padding: 0 0 0 10px; color: #333; font-size: 15px; word-break: break-all; }
+
+  .none-msg { text-align: center; color: #666; font-size: 15px; margin: 26px 0; }
+
+  /* 查询区块（折叠面板样式） */
+  .query { margin-top: 36px; }
+  .query-hd {
+    background: #1390d3; color: #fff;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px; font-size: 16px; font-weight: 700;
+  }
+  .query-hd .arrow { font-size: 12px; }
+  .query-bd { background: #ecf7fd; padding: 18px 16px 20px; }
+  .qgroup { display: flex; }
+  #code {
+    flex: 1; min-width: 0; height: 42px;
+    border: 1px solid #cfd8de; border-right: none;
+    border-radius: 4px 0 0 4px; background: #fff;
+    padding: 0 10px; font-size: 15px; color: #333; outline: none;
+  }
+  #code:focus { border-color: #1390d3; }
+  #btn {
+    height: 42px; padding: 0 16px;
+    background: #1390d3; color: #fff; border: none;
+    border-radius: 0 4px 4px 0;
+    font-size: 15px; cursor: pointer;
+    display: flex; align-items: center; gap: 6px;
+    white-space: nowrap;
+  }
+  #btn:active { background: #0f7fb8; }
+  #btn svg { width: 15px; height: 15px; fill: #fff; }
+  #tip { text-align: center; color: #e04b3a; font-size: 13px; margin-top: 10px; display: none; }
+
+  /* 底部导航 */
+  .foot { margin-top: 42px; padding: 18px 16px 10px; text-align: center; }
+  .foot nav { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px 20px; }
+  .foot a { color: #343434; font-size: 13px; text-decoration: none; }
+  .copy { text-align: center; color: #999; font-size: 12px; margin-top: 14px; padding-bottom: 26px; }
+</style>
+</head>
+<body>
+  <div class="sitebar">
+    <a class="logo" href="#" aria-label="HCT 恒仓检测">HCT</a>
+    <button class="menu-btn" id="menu" type="button" aria-label="菜单" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="menu-dd" id="menudd">
+      <a href="#">网站首页</a>
+      <a href="#">关于恒仓</a>
+      <a href="#">检测范围</a>
+      <a href="#">联系我们</a>
+    </div>
+  </div>
+
+  <div class="banner"><img src="../hct-banner.jpg" alt="HCT 恒仓检测"></div>
+
+  <div class="crumb">
+    <a href="#">网站首页</a><span class="sep">/</span><span class="cur">报告查询</span>
+  </div>
+  <div class="crumb-line"></div>
+
+  <h1 class="h1">查询报告真伪</h1>
+
+  <div id="result" class="rows wrap" style="display:none" aria-live="polite"></div>
+  <p id="none" class="none-msg wrap" style="display:none" aria-live="polite">未查询到相关报告，请核实后重新输入</p>
+
+  <div class="query wrap">
+    <div class="query-hd"><span>查询报告真伪</span><span class="arrow">▼</span></div>
+    <div class="query-bd">
+      <form id="qform" class="qgroup">
+        <input id="code" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="search" aria-label="要查询的报告号" placeholder="请输入要查询的报告号">
+        <button id="btn" type="submit">
+          <svg viewBox="0 0 24 24"><path d="M10 2a8 8 0 1 0 4.9 14.3l5.4 5.4 1.4-1.4-5.4-5.4A8 8 0 0 0 10 2zm0 2a6 6 0 1 1 0 12 6 6 0 0 1 0-12z"/></svg>
+          开始查询
+        </button>
+      </form>
+      <p id="tip">请先输入要查询的报告号</p>
+    </div>
+  </div>
+
+  <div class="foot">
+    <nav>
+      <a href="#">网站首页</a><a href="#">关于恒仓</a><a href="#">检测范围</a><a href="#">联系我们</a>
+    </nav>
+  </div>
+  <p class="copy">© 2025 HCT 恒仓检测 版权所有</p>
+
+<script>
+  // 说明：本页为「自包含演示/样板查询页」（仿 HCT 恒仓检测报告真伪查询），扫码后无需后端即可直接展示报告；
+  // 报告数据以 base64 内嵌于前端（内容本身即为页面要展示的数据，并非敏感信息）。
+  // 按 URL 参数 ?r=<报告号> 或手动输入匹配展示对应报告。
+  var DATA_B64 = "W3sia2V5cyI6WyJIQzI1MTYwMTg5MlQiXSwicm93cyI6W1si5oql5ZGK57yW5Y+3IiwiSEMyNTE2MDE4OTJUIl0sWyLkuqflk4HlkI3np7AiLCLogZrkuZnng6/pq5jljovoloTohpwo5aGR5paZ6Ziy5rC06Zuo5biDKSJdLFsi5p2Q6LSo6KeE5qC8IiwiNm0qMC4wNG1tLDYwa2cv5o2GKOWHgOmHjSkiXSxbIuWnlOaJmOaWuSIsIuWbm+W3nee+juWFtOWMheijheWItuWTgeaciemZkOWFrOWPuCJdLFsi5aeU5omY5pa55Zyw5Z2AIiwi5Zub5bed55yB5Y2X5YWF5biC6KW/5YWF5Y6/5LmJ5YW06ZWH5bed5Lic5YyX5pyJ5py65Yac5Lqn5ZOB57K+5rex5Yqg5bel5Lqn5Lia5ZutIl0sWyLmiqXlkYrml6XmnJ8iLCIyMDI1LjA5LjI2Il1dfV0=";
+
+  // 手工把 atob 得到的二进制串按 UTF-8 解码为字符串（不依赖已废弃的 escape()）。
+  // 校验前置字节与后续续字节，非法字节以 U+FFFD 替换，避免异常数据输出乱码。
+  function binToUtf8(bin) {
+    var n = bin.length, i = 0, out = [];
+    function cont(k) { return k < n ? bin.charCodeAt(k) & 0xC0 : 0; }
+    while (i < n) {
+      var c = bin.charCodeAt(i), cp;
+      if (c < 0x80) { cp = c; i += 1; }
+      else if (c >= 0xC2 && c < 0xE0 && cont(i + 1) === 0x80) {
+        cp = ((c & 0x1F) << 6) | (bin.charCodeAt(i + 1) & 0x3F); i += 2;
+      } else if (c >= 0xE0 && c < 0xF0 && cont(i + 1) === 0x80 && cont(i + 2) === 0x80) {
+        cp = ((c & 0x0F) << 12) | ((bin.charCodeAt(i + 1) & 0x3F) << 6) | (bin.charCodeAt(i + 2) & 0x3F); i += 3;
+        if (cp < 0x800) cp = 0xFFFD; // 拒绝 3 字节过度编码
+      } else if (c >= 0xF0 && c <= 0xF4 && cont(i + 1) === 0x80 && cont(i + 2) === 0x80 && cont(i + 3) === 0x80) {
+        cp = ((c & 0x07) << 18) | ((bin.charCodeAt(i + 1) & 0x3F) << 12) | ((bin.charCodeAt(i + 2) & 0x3F) << 6) | (bin.charCodeAt(i + 3) & 0x3F); i += 4;
+        if (cp < 0x10000) cp = 0xFFFD; // 拒绝 4 字节过度编码
+      } else { cp = 0xFFFD; i += 1; } // 非法前置/续字节（含 0xC0/0xC1 的 2 字节过度编码）
+      if (cp > 0x10FFFF || (cp >= 0xD800 && cp <= 0xDFFF)) cp = 0xFFFD; // 越界/代理区
+      if (cp > 0xFFFF) { cp -= 0x10000; out.push(0xD800 + (cp >> 10), 0xDC00 + (cp & 0x3FF)); }
+      else out.push(cp);
+    }
+    var s = '', k;
+    for (k = 0; k < out.length; k++) s += String.fromCharCode(out[k]);
+    return s;
+  }
+
+  function bytesOf(bin) {
+    var b = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) b[i] = bin.charCodeAt(i);
+    return b;
+  }
+
+  // 优先 TextDecoder；旧 WebView 不支持时退回手工 UTF-8 解码兜底，
+  // 保证扫码直达这一核心场景不因缺少现代 API 而失效
+  function b64ToJson(b64) {
+    var bin = atob(b64);
+    var json = (typeof TextDecoder !== 'undefined')
+      ? new TextDecoder('utf-8').decode(bytesOf(bin))
+      : binToUtf8(bin);
+    return JSON.parse(json);
+  }
+
+  // URL 参数读取：优先 URLSearchParams，缺失/异常时手动解析 location.search 兜底；
+  // 两条路径均把 '+' 视为空格、并容忍畸形百分号，避免 URIError 中断初始化
+  function getParam(name) {
+    if (typeof URLSearchParams !== 'undefined') {
+      try { return new URLSearchParams(location.search).get(name); } catch (e) { /* 落入下方兜底 */ }
+    }
+    var safe = String(name).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // 转义正则元字符
+    var m = location.search.match(new RegExp('[?&]' + safe + '=([^&#]*)'));
+    if (!m) return null;
+    var raw = m[1].replace(/\+/g, ' ');
+    try { return decodeURIComponent(raw); } catch (e) { return raw; }
+  }
+
+  var REPORTS = [];
+  try { REPORTS = b64ToJson(DATA_B64); }
+  catch (e) { REPORTS = []; if (typeof console !== 'undefined') console.warn('报告数据解析失败', e); }
+
+  // 匹配归一化：转小写并去掉所有非字母数字字符（空格/连字符等），保留前导零，
+  // 使手输报告号对大小写、分隔符更宽容
+  function normKey(s) {
+    return String(s == null ? '' : s).toLowerCase().replace(/[^a-z0-9]/g, '');
+  }
+  function findReport(key) {
+    var k = normKey(key);
+    if (!k) return -1;
+    for (var i = 0; i < REPORTS.length; i++) {
+      var keys = Array.isArray(REPORTS[i].keys) ? REPORTS[i].keys : [];
+      for (var j = 0; j < keys.length; j++) {
+        if (normKey(keys[j]) === k) return i;
+      }
+    }
+    return -1;
+  }
+
+  // 用 DOM API 构建行，避免拼接 innerHTML
+  function renderReport(i) {
+    var box = document.getElementById('result');
+    box.innerHTML = '';
+    var rows = Array.isArray(REPORTS[i].rows) ? REPORTS[i].rows : [];
+    rows.forEach(function (r) {
+      if (!Array.isArray(r) || r.length < 2) return; // 跳过结构异常的行
+      var row = document.createElement('div'); row.className = 'row';
+      var lab = document.createElement('div'); lab.className = 'lab'; lab.textContent = String(r[0]) + '：';
+      var val = document.createElement('div'); val.className = 'val'; val.textContent = String(r[1]);
+      row.appendChild(lab); row.appendChild(val);
+      box.appendChild(row);
+    });
+    box.style.display = '';
+    document.getElementById('none').style.display = 'none';
+  }
+
+  function showNone() {
+    document.getElementById('result').style.display = 'none';
+    document.getElementById('none').style.display = '';
+  }
+
+  function doQuery(key) {
+    var tip = document.getElementById('tip');
+    if (String(key).trim() === '') {
+      // 空查询：提示先输入，并收起已渲染的报告与“未查询到”提示，避免同屏矛盾
+      tip.style.display = '';
+      document.getElementById('result').style.display = 'none';
+      document.getElementById('none').style.display = 'none';
+      return;
+    }
+    tip.style.display = 'none';
+    var i = findReport(key);
+    if (i !== -1) renderReport(i); else showNone();
+  }
+
+  // 用 <form> 提交统一处理：按钮点击与 iOS 虚拟键盘“搜索/前往”键都走 submit
+  document.getElementById('qform').addEventListener('submit', function (e) {
+    e.preventDefault();
+    doQuery(document.getElementById('code').value);
+  });
+
+  // 汉堡菜单展开/收起
+  var menu = document.getElementById('menu');
+  var menudd = document.getElementById('menudd');
+  menu.addEventListener('click', function () {
+    var open = menudd.classList.toggle('open');
+    menu.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+  menudd.addEventListener('click', function (e) {
+    if (e.target.tagName === 'A') { e.preventDefault(); menudd.classList.remove('open'); menu.setAttribute('aria-expanded', 'false'); }
+  });
+
+  // URL 携带报告标识（二维码指向 /hct/?r=<报告号>）时直接展示；
+  // 带参数（含空/纯空白）但未命中时给出提示；无参数时保持初始空态，不主动提示
+  var rParam = getParam('r');
+  var rIdx = findReport(rParam);
+  if (rIdx !== -1) renderReport(rIdx);
+  else if (rParam != null) showNone();
+</script>
+</body>
+</html>
