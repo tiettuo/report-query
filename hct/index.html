@@ -99,7 +99,7 @@
   .foot { margin-top: 42px; padding: 18px 16px 10px; text-align: center; }
   .foot nav { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px 20px; }
   .foot a { color: #343434; font-size: 13px; text-decoration: none; }
-  .copy { text-align: center; color: #999; font-size: 12px; margin-top: 14px; padding-bottom: 26px; }
+  .copy { text-align: center; color: #666; font-size: 12px; margin-top: 14px; padding-bottom: 26px; }
 </style>
 </head>
 <body>
@@ -117,7 +117,7 @@
     </div>
   </div>
 
-  <div class="banner"><img src="../hct-banner.jpg" alt="HCT 恒仓检测"></div>
+  <div class="banner"><img src="hct-banner.jpg" alt="HCT 恒仓检测"></div>
 
   <div class="crumb">
     <a href="#">网站首页</a><span class="sep">/</span><span class="cur">报告查询</span>
@@ -128,6 +128,18 @@
 
   <div id="result" class="rows wrap" style="display:none" aria-live="polite"></div>
   <p id="none" class="none-msg wrap" style="display:none" aria-live="polite">未查询到相关报告，请核实后重新输入</p>
+
+  <!-- 无 JS 兑底：直接展示报告静态内容，保证任何情况下扫码都能看到报告 -->
+  <noscript>
+    <div class="rows wrap">
+      <div class="row"><div class="lab">报告编号：</div><div class="val">HC251601892T</div></div>
+      <div class="row"><div class="lab">产品名称：</div><div class="val">聚乙烯高压薄膜(塑料防水雨布)</div></div>
+      <div class="row"><div class="lab">材质规格：</div><div class="val">5.5m*0.04mm,60kg/捆(净重)</div></div>
+      <div class="row"><div class="lab">委托方：</div><div class="val">四川美兴包装制品有限公司</div></div>
+      <div class="row"><div class="lab">委托方地址：</div><div class="val">四川省南充市西充县义兴镇川东北有机农产品精深加工产业园</div></div>
+      <div class="row"><div class="lab">报告日期：</div><div class="val">2026.09.05</div></div>
+    </div>
+  </noscript>
 
   <div class="query wrap">
     <button class="query-hd" id="queryhd" type="button" aria-expanded="true" aria-controls="querybd"><span>查询报告真伪</span><span class="arrow">▼</span></button>
@@ -146,7 +158,7 @@
   <div class="foot">
     <nav><!-- 占位导航，上线前替换真实地址 --><a href="#">网站首页</a><a href="#">关于恒仓</a><a href="#">检测范围</a><a href="#">联系我们</a></nav>
   </div>
-  <p class="copy">© 2025 HCT 恒仓检测 版权所有</p>
+  <p class="copy">© 2026 HCT 恒仓检测 版权所有</p>
 
 <script>
   // 说明：本页为「自包含演示/样板查询页」（仿 HCT 恒仓检测报告真伪查询），扫码后无需后端即可直接展示报告；
